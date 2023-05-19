@@ -80,7 +80,11 @@
 #else
   #define CURR_FREE_MEM_WEIGHT 0.7
 #endif
-
+/*
+这段代码定义了一个宏函数ntohll(x)，用于将64位的网络字节序转换为主机字节序。
+具体实现是先将高32位和低32位分别转换为主机字节序，然后将高32位左移32位，
+再和低32位进行或运算，得到最终的64位主机字节序。这个宏函数可以用于网络编程中处理64位整数的字节序转换。
+*/
 #define ntohll(x) (((uint64_t)(ntohl((int)((x << 32) >> 32))) << 32) | \
         (unsigned int)ntohl(((int)(x >> 32))))
 
@@ -95,7 +99,7 @@ struct message {
   uint32_t rkey[MAX_MR_SIZE_GB];
   int size_gb;
   //uint64_t size;
-  enum {
+  enum {//C:Client S:Server?
     DONE = 1, //C
     INFO, //S
     INFO_SINGLE,
@@ -110,17 +114,37 @@ struct message {
 };
 
 struct context {
-  struct ibv_context *ctx;
+  struct ibv_context *ctx;//InfiniBand设备的上下文
+  /*
+  *pd表示InfiniBand设备的保护域。保护域用于隔离不同的应用程序或用户，保证它们之间的数据不会相互干扰。
+  在InfiniBand编程中，需要先创建一个保护域，然后将内存区域注册到保护域中，才能进行数据传输。
+  pd指针可以用于管理保护域和注册内存区域
+  */
   struct ibv_pd *pd;
-  struct ibv_cq *cq;
+  /*
+    ibv_cq *cq是一个指向ibv_cq结构体的指针，表示InfiniBand设备的完成队列。
+    完成队列用于存储完成事件的信息，例如数据传输完成、接收到新的连接等。
+    在InfiniBand编程中，需要先创建一个完成队列，然后将其与相应的通信端点关联，才能接收完成事件。
+    cq指针可以用于管理完成队列和处理完成事件。
+  */
+  struct ibv_cq *cq;//完成队列
+  /*
+  ibv_comp_channel是InfiniBand中的一个重要概念，用于异步地接收完成事件。
+  在InfiniBand编程中，可以创建一个完成通道，将其与相应的完成队列关联，然后在完成通道上等待完成事件。
+  comp_channel指针可以用于管理完成通道和处理完成事件。
+  */
   struct ibv_comp_channel *comp_channel;
-
-  pthread_t cq_poller_thread;
+  /*
+  在InfiniBand编程中，需要不断地轮询完成队列，以便及时处理完成事件。
+  为了避免阻塞主线程，可以创建一个独立的线程来轮询完成队列。
+  cq_poller_thread变量可以用于管理完成队列轮询线程。
+  */
+  pthread_t cq_poller_thread;//完成队列的轮询线程
 };
 
-struct atomic_t{
+struct atomic_t{//用于实现原子操作
   int value;
-  pthread_mutex_t mutex;
+  pthread_mutex_t mutex;//互斥锁
 };
 
 struct connection {
@@ -156,6 +180,7 @@ struct connection {
   long free_mem_gb;
   unsigned long rdma_buf_size;
 
+//连接状态
   enum {
     S_WAIT,
     S_BIND,
@@ -176,6 +201,7 @@ struct connection {
   } recv_state;
 };
 
+//远程内存的状态
 #define CHUNK_MALLOCED 1
 #define CHUNK_EMPTY	0
 struct rdma_remote_mem{

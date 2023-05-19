@@ -21,6 +21,7 @@ struct rdma_session session;
 char free_mem_cmd[39] = "vmstat -s | awk 'FNR == 5 {printf $1}'";
 static struct context *s_ctx = NULL;
 
+//原子操作初始化、赋值、读
 void atomic_init(struct atomic_t *m)
 {
   pthread_mutex_init(&m->mutex,NULL);
@@ -28,9 +29,9 @@ void atomic_init(struct atomic_t *m)
 }
 void atomic_set(struct atomic_t *m, int val)
 {
-  pthread_mutex_lock(&m->mutex);
+  pthread_mutex_lock(&m->mutex);//锁
   m->value = val;
-  pthread_mutex_unlock(&m->mutex);
+  pthread_mutex_unlock(&m->mutex);//解锁
 }
 int atomic_read(struct atomic_t *m)
 {
@@ -45,9 +46,9 @@ int atomic_read(struct atomic_t *m)
 uint64_t htonll(uint64_t value)
 {
      int num = 42;
-     if(*(char *)&num == 42)
+     if(*(char *)&num == 42)//判断当前系统的字节序
           return ((uint64_t)htonl(value & 0xFFFFFFFF) << 32LL) | htonl(value >> 32);
-     else 
+     else //大端
           return value;
 }
 
@@ -57,9 +58,14 @@ void die(const char *reason)
   exit(EXIT_FAILURE);
 }
 
-long get_free_mem(void)
+long get_free_mem(void)//获取空闲内存大小
 {
   char result[60];
+  /*
+  /proc/meminfo是一个特殊的文件，用于提供系统的内存信息。
+  它包含了系统的总内存大小、空闲内存大小、缓存大小、交换空间大小等信息。
+  在Linux系统中，可以通过读取/proc/meminfo文件来获取系统的内存信息。
+  */
   FILE *fd = fopen("/proc/meminfo", "r");
   int i;
   long res = 0;
