@@ -271,7 +271,7 @@ void rdma_session_init(struct rdma_session *sess){
 
 }
 
-void evict_mem(int stop_g)
+void evict_mem(int stop_g)//内存驱逐
 {
   int i, j, k, n, m;
   int freed_g = 0;
