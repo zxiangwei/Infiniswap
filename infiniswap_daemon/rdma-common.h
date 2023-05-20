@@ -12,10 +12,12 @@
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
-#include <rdma/rdma_cma.h>
-#include <semaphore.h>
+#include <rdma/rdma_cma.h>//RDMA通信
+#include <semaphore.h>//信号量相关函数、数据类型
+//网络字节序
 #include <arpa/inet.h>
 #include <netinet/in.h>
+//内核
 #include <linux/kernel.h>
 
 #ifdef HAVE_CONFIG_H

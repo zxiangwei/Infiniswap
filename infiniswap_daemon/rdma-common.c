@@ -130,6 +130,7 @@ void build_connection(struct rdma_cm_id *id)
   post_receives(conn);
 }
 
+//初始化context，重复报错
 void build_context(struct ibv_context *verbs)
 {
   if (s_ctx) {
@@ -142,34 +143,50 @@ void build_context(struct ibv_context *verbs)
   s_ctx = (struct context *)malloc(sizeof(struct context));
 
   s_ctx->ctx = verbs;
-
+  
+  //ibv_alloc_pd函数是用于分配一个Protection Domain（PD）的函数，
+  //PD是InfiniBand中的一个重要概念，它是一个保护域，
+  //用于隔离不同的内存区域和不同的QP（Queue Pair），从而保证数据的安全性和可靠性。
   TEST_Z(s_ctx->pd = ibv_alloc_pd(s_ctx->ctx));
+  //CC是InfiniBand中的一个重要概念，它用于接收Completion Queue（CQ）中的完成事件，
+  //从而通知应用程序数据传输的完成情况。
   TEST_Z(s_ctx->comp_channel = ibv_create_comp_channel(s_ctx->ctx));
+  //CQ是InfiniBand中的一个重要概念，它用于存储数据传输的完成事件，
+  //包括发送和接收完成事件，从而通知应用程序数据传输的完成情况
   TEST_Z(s_ctx->cq = ibv_create_cq(s_ctx->ctx, 10, NULL, s_ctx->comp_channel, 0)); /* cqe=10 is arbitrary */
   TEST_NZ(ibv_req_notify_cq(s_ctx->cq, 0));
 
   TEST_NZ(pthread_create(&s_ctx->cq_poller_thread, NULL, poll_cq, NULL));
 }
 
+//构建创建连接所用的参数
 void build_params(struct rdma_conn_param *params)
 {
   memset(params, 0, sizeof(*params));
 
+  //initiator_depth：发起方深度，表示发起方可以同时发送的请求数量。
+  //responder_resources：响应方资源数量，表示响应方可以同时处理的请求数量。
   params->initiator_depth = params->responder_resources = 1;
+
+  //Receiver Not Ready重试次数
   params->rnr_retry_count = 7; /* infinite retry */
 }
 
+//创建用于初始化Queue Pair（QP）的属性结构体
 void build_qp_attr(struct ibv_qp_init_attr *qp_attr)
 {
   memset(qp_attr, 0, sizeof(*qp_attr));
 
   qp_attr->send_cq = s_ctx->cq;
   qp_attr->recv_cq = s_ctx->cq;
+  //Reliable Connection（RC）类型，可靠连接
   qp_attr->qp_type = IBV_QPT_RC;
 
   qp_attr->cap.max_send_wr = 10;
   qp_attr->cap.max_recv_wr = 100; //original 10
+  //每个发送请求中可以包含的scatter/gather元素的最大数量
   qp_attr->cap.max_send_sge = 1;
+  //每个接收请求中可以包含的scatter/gather元素的最大数量。
   qp_attr->cap.max_recv_sge = 1;
 }
 
