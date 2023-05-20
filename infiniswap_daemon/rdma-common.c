@@ -146,7 +146,7 @@ void build_context(struct ibv_context *verbs)
   
   //ibv_alloc_pd函数是用于分配一个Protection Domain（PD）的函数，
   //PD是InfiniBand中的一个重要概念，它是一个保护域，
-  //用于隔离不同的内存区域和不同的QP（Queue Pair），从而保证数据的安全性和可靠性。
+  //用于隔离不同的内存区域和不同的QP（Queue Pair），即一对发送队列和接收队列，从而保证数据的安全性和可靠性。
   TEST_Z(s_ctx->pd = ibv_alloc_pd(s_ctx->ctx));
   //CC是InfiniBand中的一个重要概念，它用于接收Completion Queue（CQ）中的完成事件，
   //从而通知应用程序数据传输的完成情况。
@@ -327,6 +327,7 @@ void evict_mem(int stop_g)
 
   j = 0;  
   // evict_g += EXTRA_CHUNK_NUM;
+  //选择将要被释放的slab
   if (session.rdma_remote.mapped_size < (evict_g + EXTRA_CHUNK_NUM)){ //not enough
     if (session.rdma_remote.mapped_size < evict_g){
       evict_g = session.rdma_remote.mapped_size;
@@ -370,6 +371,7 @@ void evict_mem(int stop_g)
   printf("%s, total selected chunk is %d\n", __func__, k);
   session.evict_list = (struct chunk_activity *)malloc(sizeof(struct chunk_activity) * k);
 
+  //将evict消息发送给slab对应的远程服务器
   for (i=0; i< MAX_CLIENT; i++){
     if (send_list[i] == 1){
       printf("%s, send evict to conn[%d]\n", __func__, i);
@@ -648,7 +650,9 @@ void register_memory(struct connection *conn)
 
 void send_message(struct connection *conn)
 {
+  // ibv_send_wr包含了发送数据的地址、长度、发送类型、发送标志等信息，可以用于构建发送请求
   struct ibv_send_wr wr, *bad_wr = NULL;
+  // 用于描述发送数据的缓冲区
   struct ibv_sge sge;
 
   memset(&wr, 0, sizeof(wr));

@@ -209,8 +209,8 @@ struct connection {
 struct rdma_remote_mem{
   char* region_list[MAX_FREE_MEM_GB];
   struct ibv_mr* mr_list[MAX_FREE_MEM_GB]; 
-  int size_gb; 
-  int mapped_size;
+  int size_gb; //远程内存的大小
+  int mapped_size;//已经映射(使用)的内存大小
   int conn_map[MAX_FREE_MEM_GB]; //chunk is used by which connection, or -1
   int malloc_map[MAX_FREE_MEM_GB];
   int conn_chunk_map[MAX_FREE_MEM_GB]; //session_chunk 
