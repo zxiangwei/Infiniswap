@@ -47,7 +47,6 @@ int main(int argc, char **argv)
 
   //free
   running = 1;
-
   //创建一个线程，用于释放内存。创建失败则退出程序
   /*
     其中，&free_mem_thread表示新线程的ID，
