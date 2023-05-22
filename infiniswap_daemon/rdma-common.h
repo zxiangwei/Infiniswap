@@ -170,8 +170,8 @@ struct connection {
 
   struct ibv_mr peer_mr;
 
-  struct message *recv_msg;
-  struct message *send_msg;
+  struct message *recv_msg;//收到的消息
+  struct message *send_msg;//发送的消息
 
   char *rdma_remote_region;
   //struct rdma_remote_mem rdma_remote;

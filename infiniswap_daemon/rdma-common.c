@@ -271,7 +271,7 @@ void rdma_session_init(struct rdma_session *sess){
 
 }
 
-void evict_mem(int stop_g)//内存驱逐
+void evict_mem(int stop_g)//内存驱逐，在free mem中调用
 {
   int i, j, k, n, m;
   int freed_g = 0;
@@ -433,7 +433,7 @@ void evict_mem(int stop_g)//内存驱逐
 
 }
 
-void* free_mem(void *data)
+void* free_mem(void *data)//内存释放线程
 {
   int free_mem_g = 0;
   int last_free_mem_g;
@@ -501,7 +501,7 @@ void* free_mem(void *data)
   return NULL;
 }
 
-void recv_done(struct connection *conn)
+void recv_done(struct connection *conn)//接收完成
 {
   int evict_g = conn->recv_msg->size_gb;
   int i, j, index;
@@ -672,6 +672,7 @@ void send_message(struct connection *conn)
 
   TEST_NZ(ibv_post_send(conn->qp, &wr, &bad_wr));
 }
+//发送单个内存块信息
 void send_single_mr(void *context, int client_chunk_index)
 {
   struct connection *conn = (struct connection *)context;
@@ -681,11 +682,13 @@ void send_single_mr(void *context, int client_chunk_index)
   for (i=0; i<MAX_FREE_MEM_GB;i++){
     conn->send_msg->rkey[i] = 0;
   }
-  for (i=0; i<MAX_FREE_MEM_GB; i++) {
+  for (i=0; i<MAX_FREE_MEM_GB; i++) {//找到一个已分配但为映射的内存块
     if (session.rdma_remote.malloc_map[i] == CHUNK_MALLOCED && session.rdma_remote.conn_map[i] == -1) {// allocated && unmapped 
       conn->sess_chunk_map[i] = i;
       session.rdma_remote.conn_map[i] = conn->conn_index;
+      //注册内存块
       TEST_Z(session.rdma_remote.mr_list[i] = ibv_reg_mr(s_ctx->pd, session.rdma_remote.region_list[i], ONE_GB, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ)); //Write permission can't cover read permission, different traditional understanding
+      //将地址和key存储到发送消息中
       conn->send_msg->buf[i] = htonll((uint64_t)session.rdma_remote.mr_list[i]->addr);
       conn->send_msg->rkey[i] = htonl((uint64_t)session.rdma_remote.mr_list[i]->rkey);
       printf("RDMA addr %llx  rkey %x\n", (unsigned long long)conn->send_msg->buf[i], conn->send_msg->rkey[i]);
@@ -698,6 +701,8 @@ void send_single_mr(void *context, int client_chunk_index)
 
   send_message(conn);
 }
+
+//发送内存块信息，size为内存块数
 void send_mr(void *context, int size)
 {
   struct connection *conn = (struct connection *)context;
@@ -717,7 +722,7 @@ void send_mr(void *context, int size)
       conn->send_msg->rkey[i] = htonl((uint64_t)session.rdma_remote.mr_list[i]->rkey);
       printf("RDMA addr %llx  rkey %x\n", (unsigned long long)conn->send_msg->buf[i], conn->send_msg->rkey[i]);
       j += 1;
-      if (j == size){
+      if (j == size){//size块内存
         break;
       }
     }
@@ -729,17 +734,19 @@ void send_mr(void *context, int size)
   send_message(conn);
 }
 
+//发生当前空闲内存大小
 void send_free_mem_size(void *context)
 {
   struct connection *conn = (struct connection *)context;
 
   conn->send_msg->type = FREE_SIZE;
-  conn->send_msg->size_gb = session.rdma_remote.size_gb - session.rdma_remote.mapped_size;
+  conn->send_msg->size_gb = session.rdma_remote.size_gb - session.rdma_remote.mapped_size;//内存大小-映射大小
   printf("%s , %d\n", __func__, conn->send_msg->size_gb);
   send_message(conn);
 }
 
 //stop n chunks
+//停止映射内存
 void send_stop(void *context, int n)
 {
   struct connection *conn = (struct connection *)context;
@@ -751,6 +758,7 @@ void send_stop(void *context, int n)
    sem_wait(&conn->stop_sem);
   }
 }
+
 void send_evict(void *context, int n)
 {
   int i;
