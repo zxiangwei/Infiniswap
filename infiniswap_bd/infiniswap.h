@@ -99,20 +99,23 @@
 	+ sizeof(uint64_t) /* nbytes */			\
 	+ sizeof(uint64_t) /* offset */
 
+/*
+dev是文件所在的设备号，而rdev是设备文件的设备号。设备文件是一种特殊类型的文件，它代表了系统中的硬件设备，如磁盘驱动器、串口、打印机等。rdev存储的是设备文件所代表的设备的设备号。
+*/
 #define STAT_BLOCK_SIZE					\
-	+ sizeof(uint64_t) /* dev */			\
-	+ sizeof(uint64_t) /* ino */			\
-	+ sizeof(uint32_t) /* mode */			\
-	+ sizeof(uint32_t) /* nlink */                  \
-	+ sizeof(uint64_t) /* uid */			\
-	+ sizeof(uint64_t) /* gid */			\
-	+ sizeof(uint64_t) /* rdev */			\
-	+ sizeof(uint64_t) /* size */                   \
-	+ sizeof(uint32_t) /* blksize */                \
-	+ sizeof(uint32_t) /* blocks */                 \
-	+ sizeof(uint64_t) /* atime */                  \
-	+ sizeof(uint64_t) /* mtime */                  \
-	+ sizeof(uint64_t) /* ctime */
+	+ sizeof(uint64_t) /* dev 设备号*/			\
+	+ sizeof(uint64_t) /* ino inode号*/			\
+	+ sizeof(uint32_t) /* mode 文件权限*/			\
+	+ sizeof(uint32_t) /* nlink 硬链接数*/                  \
+	+ sizeof(uint64_t) /* uid 所有者ID*/			\
+	+ sizeof(uint64_t) /* gid 组ID*/			\
+	+ sizeof(uint64_t) /* rdev 设备文件的设备号*/			\
+	+ sizeof(uint64_t) /* size 文件大小*/                   \
+	+ sizeof(uint32_t) /* blksize 块大小*/                \
+	+ sizeof(uint32_t) /* blocks 块数*/                 \
+	+ sizeof(uint64_t) /* atime 访问时间*/                  \
+	+ sizeof(uint64_t) /* mtime 修改时间*/                  \
+	+ sizeof(uint64_t) /* ctime 创建时间*/
 struct raio_answer {
 	uint32_t command;
 	uint32_t data_len;
@@ -587,7 +590,7 @@ struct r_stat64 {
     uint64_t     st_size;    /* total size, in bytes */
  };
 
-struct IS_file {
+struct IS_file {//文件
 	int			     fd;
 	int			     major; /* major number from kernel */
 	struct r_stat64		     stbuf; /* remote file stats*/

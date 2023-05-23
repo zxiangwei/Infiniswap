@@ -55,9 +55,10 @@ int IS_major;
 int IS_indexes; /* num of devices created*/
 int submit_queues; // num of available cpu (also connections)
 struct list_head g_IS_sessions;
-struct mutex g_lock;
+struct mutex g_lock;//锁
 int NUM_CB;	// num of server/cb
 
+//设置设备的状态
 inline int IS_set_device_state(struct IS_file *xdev,
 				 enum IS_dev_state state)
 {
@@ -65,7 +66,7 @@ inline int IS_set_device_state(struct IS_file *xdev,
 
 	spin_lock(&xdev->state_lock);
 	switch (state) {
-	case DEVICE_OPENNING:
+	case DEVICE_OPENNING://打开
 		if (xdev->state == DEVICE_OFFLINE ||
 		    xdev->state == DEVICE_RUNNING) {
 			ret = -EINVAL;
@@ -73,10 +74,10 @@ inline int IS_set_device_state(struct IS_file *xdev,
 		}
 		xdev->state = state;
 		break;
-	case DEVICE_RUNNING:
+	case DEVICE_RUNNING://运行
 		xdev->state = state;
 		break;
-	case DEVICE_OFFLINE:
+	case DEVICE_OFFLINE://离线
 		xdev->state = state;
 		break;
 	default:
