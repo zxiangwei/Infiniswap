@@ -125,6 +125,7 @@ void IS_insert_ctx(struct rdma_ctx *ctx)
 	spin_unlock_irqrestore(&free_ctxs->ctx_lock, flags);
 }
 
+//RDMA读
 int IS_rdma_read(struct IS_connection *IS_conn, struct kernel_cb *cb, int cb_index, int chunk_index, struct remote_chunk_g *chunk, unsigned long offset, unsigned long len, struct request *req, struct IS_queue *q)
 {
 	int ret;
@@ -430,6 +431,7 @@ struct IS_session *IS_session_find_by_portal(struct list_head *s_data_list,
 	return ret;
 }
 
+//断开连接的处理函数
 static int IS_disconnect_handler(struct kernel_cb *cb)
 {
 	int pool_index = cb->cb_index;
@@ -540,6 +542,7 @@ static int IS_disconnect_handler(struct kernel_cb *cb)
 	return err;
 }
 
+//事件处理主函数
 static int IS_cma_event_handler(struct rdma_cm_id *cma_id,
 				   struct rdma_cm_event *event)
 {
@@ -1786,6 +1789,7 @@ void IS_session_destroy(struct IS_session *IS_session)
 	IS_destroy_session_devices(IS_session);
 }
 
+//主函数
 static int __init IS_init_module(void)
 {
 	if (IS_create_configfs_files())
@@ -1794,7 +1798,7 @@ static int __init IS_init_module(void)
 	pr_debug("nr_cpu_ids=%d, num_online_cpus=%d\n", nr_cpu_ids, num_online_cpus());
 
 	submit_queues = num_online_cpus();
-
+//在Linux内核中注册一个名为"infiniswap"的块设备驱动程序，并将其主设备号存储在IS_major变量中。
 	IS_major = register_blkdev(0, "infiniswap");
 	if (IS_major < 0)
 		return IS_major;
@@ -1820,5 +1824,5 @@ static void __exit IS_cleanup_module(void)
 
 }
 
-module_init(IS_init_module);
-module_exit(IS_cleanup_module);
+module_init(IS_init_module);//初始化模块
+module_exit(IS_cleanup_module);//清除模块

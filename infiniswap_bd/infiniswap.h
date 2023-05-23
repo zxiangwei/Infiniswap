@@ -116,24 +116,28 @@ dev是文件所在的设备号，而rdev是设备文件的设备号。设备文�
 	+ sizeof(uint64_t) /* atime 访问时间*/                  \
 	+ sizeof(uint64_t) /* mtime 修改时间*/                  \
 	+ sizeof(uint64_t) /* ctime 创建时间*/
-struct raio_answer {
+
+struct raio_answer {//IO的返回结果
 	uint32_t command;
 	uint32_t data_len;
 	int32_t ret;
 	int32_t ret_errno;
 };
-struct raio_command {
+
+struct raio_command {//IO命令
 	uint32_t command;
 	uint32_t data_len;
 };
-struct raio_iocb_common {
+
+struct raio_iocb_common {//通用参数
 	void			*buf;
 	unsigned long long	nbytes;
 	long long		offset;
 	unsigned int		flags;
 	unsigned int		resfd;
 };	
-struct raio_iocb {
+
+struct raio_iocb {//具体参数
 	void			*data;  /* Return in the io completion event */
 	unsigned int		key;	/* For use in identifying io requests */
 	int			raio_fildes;
@@ -358,14 +362,15 @@ struct remote_chunk_g_list {
 
 /*
  *  rdma kernel Control Block struct.
+ *	控制块
  */
 struct kernel_cb {
 	int cb_index; //index in IS_sess->cb_list
 	struct IS_session *IS_sess;
 	int server;			/* 0 iff client */
-	struct ib_cq *cq;
-	struct ib_pd *pd;
-	struct ib_qp *qp;
+	struct ib_cq *cq;//完成队列
+	struct ib_pd *pd;//物理设备(在InfiniBand网络中，物理设备是通过Protection Domain（PD）来管理的)
+	struct ib_qp *qp;//队列对
 
 	enum mem_type mem;
 	struct ib_mr *dma_mr;
@@ -412,7 +417,7 @@ struct kernel_cb {
 	//struct IS_stats stats;
 
 	// from arg
-	uint16_t port;			/* dst port in NBO */
+	uint16_t port;			/* dst port in NBO *///NBO是网络字节序（Network Byte Order）的缩写，用于在不同的计算机之间传输数据时保证数据的正确性。在NBO中，高位字节存储在低地址，低位字节存储在高地址。
 	u8 addr[16];			/* dst addr in NBO */
 	char *addr_str;			/* dst addr string */
 	uint8_t addr_type;		/* ADDR_FAMILY - IPv4/V6 */
@@ -470,6 +475,7 @@ struct free_ctx_pool {
 	int tail;
 	spinlock_t ctx_lock;
 };
+
 struct ctx_pool_list {
 	struct rdma_ctx 	*ctx_pool;
 	struct free_ctx_pool *free_ctxs;
