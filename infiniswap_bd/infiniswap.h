@@ -446,7 +446,7 @@ enum IS_dev_state {
 #define CTX_W_IN_FLIGHT	2
 
 struct rdma_ctx {
-	struct IS_connection *IS_conn;
+	struct IS_connection *IS_conn;//RDMA连接
 	struct free_ctx_pool *free_ctxs;  //or this one
 	//struct mutex ctx_lock;	
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 4, 0)
@@ -454,11 +454,11 @@ struct rdma_ctx {
 #else
 	struct ib_send_wr rdma_sq_wr;	/* rdma work request record */
 #endif
-	struct ib_sge rdma_sgl;		/* rdma single SGE */
+	struct ib_sge rdma_sgl;		/* rdma single SGE */ //单个SGE（Scatter-Gather Element，分散-聚集元素）
 	char *rdma_buf;			/* used as rdma sink */
 	u64  rdma_dma_addr;
 	DECLARE_PCI_UNMAP_ADDR(rdma_mapping)
-	struct ib_mr *rdma_mr;
+	struct ib_mr *rdma_mr;//内存区域？
 	struct request *req;
 	int chunk_index;
 	struct kernel_cb *cb;
@@ -468,6 +468,7 @@ struct rdma_ctx {
 	atomic_t in_flight; //true = 1, false = 0
 };
 
+//空闲的RDMA上下文池
 struct free_ctx_pool {
 	unsigned int len;
 	struct rdma_ctx **ctx_list;
@@ -475,7 +476,7 @@ struct free_ctx_pool {
 	int tail;
 	spinlock_t ctx_lock;
 };
-
+//所有的RDMA上下文池
 struct ctx_pool_list {
 	struct rdma_ctx 	*ctx_pool;
 	struct free_ctx_pool *free_ctxs;

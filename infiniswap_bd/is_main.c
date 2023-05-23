@@ -221,6 +221,7 @@ void mem_gather(char *rdma_buf, struct request *req)
 	}
 }
 
+//RDMA写
 int IS_rdma_write(struct IS_connection *IS_conn, struct kernel_cb *cb, int cb_index, int chunk_index, struct remote_chunk_g *chunk, unsigned long offset, unsigned long len, struct request *req, struct IS_queue *q)
 {
 	int ret;
@@ -661,6 +662,7 @@ static int IS_chunk_wait_in_flight_requests(struct kernel_cb *cb)
 	return err; 
 }
 
+//内存驱逐
 static int evict_handler(void *data)
 {
 	struct kernel_cb *cb = data;	
@@ -745,6 +747,7 @@ static void client_recv_evict(struct kernel_cb *cb)
 	cb->remote_chunk.c_state = C_EVICT;
 	wake_up_interruptible(&cb->remote_chunk.sem);
 }
+
 static void client_recv_stop(struct kernel_cb *cb)
 {
 	int i;
@@ -868,6 +871,7 @@ static int client_write_done(struct kernel_cb * cb, struct ib_wc *wc)
 	return 0;
 }
 
+//处理CQ队列的事件
 static void rdma_cq_event_handler(struct ib_cq * cq, void *ctx)
 {
 	struct kernel_cb *cb=ctx;
@@ -946,6 +950,7 @@ error:
 	cb->state = ERROR;
 }
 
+//设置接收和发送的数据缓冲区
 static void IS_setup_wr(struct kernel_cb *cb)
 {
 	cb->recv_sgl.addr = cb->recv_dma_addr;
@@ -970,6 +975,7 @@ static void IS_setup_wr(struct kernel_cb *cb)
 
 }
 
+//设置缓冲区
 static int IS_setup_buffers(struct kernel_cb *cb)
 {
 	int ret;
@@ -978,6 +984,7 @@ static int IS_setup_buffers(struct kernel_cb *cb)
 
 	pr_info(PFX "size of IS_rdma_info %lu\n", sizeof(cb->recv_buf));
 
+//接收地址映射
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)	
 	cb->recv_dma_addr = dma_map_single(&cb->pd->device->dev, 
 				   &cb->recv_buf, sizeof(cb->recv_buf), DMA_BIDIRECTIONAL);
@@ -987,6 +994,7 @@ static int IS_setup_buffers(struct kernel_cb *cb)
 #endif
 	pci_unmap_addr_set(cb, recv_mapping, cb->recv_dma_addr);
 
+//发送地址映射
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 	cb->send_dma_addr = dma_map_single(&cb->pd->device->dev, 
 				   &cb->send_buf, sizeof(cb->send_buf), DMA_BIDIRECTIONAL);	
@@ -1091,12 +1099,16 @@ static void IS_free_qp(struct kernel_cb *cb)
 	ib_dealloc_pd(cb->pd);
 }
 
+/*
+	初始化QP。先分配PD，然后CQ，然后QP
+*/
 /*  in ibv_enables, the first step build_connection() from build_context()
 		before create_qp
  */
 static int IS_setup_qp(struct kernel_cb *cb, struct rdma_cm_id *cm_id)
 {
 	int ret;
+	//根据不同的内核版本选择不同的代码路径
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 4, 0)
 	struct ib_cq_init_attr init_attr;
 #endif
@@ -1108,6 +1120,7 @@ static int IS_setup_qp(struct kernel_cb *cb, struct rdma_cm_id *cm_id)
 #else
 	cb->pd = ib_alloc_pd(cm_id->device);
 #endif
+//如果PD分配失败
 	if (IS_ERR(cb->pd)) {
 		printk(KERN_ERR PFX "ib_alloc_pd failed\n");
 		return PTR_ERR(cb->pd);
@@ -1124,7 +1137,7 @@ static int IS_setup_qp(struct kernel_cb *cb, struct rdma_cm_id *cm_id)
 	cb->cq = ib_create_cq(cm_id->device, rdma_cq_event_handler, NULL, cb, cb->txdepth * 2, 0);
 #endif
 
-	if (IS_ERR(cb->cq)) {
+	if (IS_ERR(cb->cq)) {//CQ创建失败
 		printk(KERN_ERR PFX "ib_create_cq failed\n");
 		ret = PTR_ERR(cb->cq);
 		goto err1;
@@ -1137,17 +1150,17 @@ static int IS_setup_qp(struct kernel_cb *cb, struct rdma_cm_id *cm_id)
 		goto err2;
 	}
 
-	ret = IS_create_qp(cb);
-	if (ret) {
+	ret = IS_create_qp(cb);//创建QP
+	if (ret) {//创建QP失败
 		printk(KERN_ERR PFX "IS_create_qp failed: %d\n", ret);
 		goto err2;
 	}
 	pr_info("created qp %p\n", cb->qp);
 	return 0;
 err2:
-	ib_destroy_cq(cb->cq);
+	ib_destroy_cq(cb->cq);//销毁CQ
 err1:
-	ib_dealloc_pd(cb->pd);
+	ib_dealloc_pd(cb->pd);//销毁PD
 	return ret;
 }
 
@@ -1689,6 +1702,7 @@ int IS_single_chunk_map(struct IS_session *IS_session, int select_chunk)
 		IS_ctx_dma_setup(tmp_cb, IS_session, cb_index); 
 		memset(name, '\0', 2);
 		name[0] = (char)((cb_index/26) + 97);
+		//创建内存驱逐线程
 		tmp_cb->remote_chunk.evict_handle_thread = kthread_create(evict_handler, tmp_cb, name);
 		wake_up_process(tmp_cb->remote_chunk.evict_handle_thread);	
 	}
